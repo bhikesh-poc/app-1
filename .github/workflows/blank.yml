@@ -15,7 +15,7 @@ jobs:
 
       - name: Print the Organization Secret
         run: |
-          echo "The organization secret value is: ${{ secrets.ORG_GITHUB_TOKEN }}"
+          echo "The organization secret value is: ${{ vars.ORG_GITHUB_TOKEN }}"
           # For security, secrets are masked in logs.
           # This means you'll see *** instead of the actual value.
           # This is expected and a good security practice!
