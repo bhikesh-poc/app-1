@@ -1,36 +1,24 @@
-# This is a basic workflow to help you get started with Actions
+name: Print Organization Secret
 
-name: CI
-
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches:
+      - main # This workflow will run on pushes to the 'main' branch
+  workflow_dispatch: # Allows you to manually trigger the workflow from the Actions tab
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
+  print_secret:
     runs-on: ubuntu-latest
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Print the Organization Secret
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          echo "The organization secret value is: ${{ secrets.ORG_TEST_SECRET }}"
+          # For security, secrets are masked in logs.
+          # This means you'll see *** instead of the actual value.
+          # This is expected and a good security practice!
+          echo "Verify it was used: ${{ contains(secrets.ORG_TEST_SECRET, 'Hello') }}"
+          # The 'contains' function might reveal if it's the correct secret,
+          # but direct printing will always be masked.
