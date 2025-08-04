@@ -1,0 +1,65 @@
+name: Trivy Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering from GitHub UI
+
+jobs:
+  trivy_scan:
+    runs-on: arc-runner-set # Use your shared Kubernetes runner group
+
+    permissions:
+      contents: read  # Required to checkout code
+      security-events: write # Required to upload SARIF to GitHub Code Scanning
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scan (SARIF format)
+        uses: aquasecurity/trivy-action@master # Use 'master' for latest updates or a specific version like '@0.12.0'
+        with:
+          scan-type: 'fs' # Scan the filesystem (your repository code)
+          format: 'sarif' # Output in SARIF format
+          output: 'trivy-results.sarif' # Save the report to this file
+          severity: 'CRITICAL,HIGH,MEDIUM' # Only report these severities
+          ignore-unfixed: true # Ignore vulnerabilities that have no fix available
+          scanners: 'vuln,secret,misconfig' # Scan for vulnerabilities, secrets, and misconfigurations
+          # You can add --timeout, --cache-dir, etc. here if needed
+          # Ensure Trivy database is updated (default behavior, but can explicitly set)
+          # skip-db-update: false # Default is false, so DB will be updated
+
+      - name: Upload SARIF report to GitHub Code Scanning
+        # This action uploads the SARIF file to GitHub's Security tab (Code Scanning alerts)
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Generate human-readable Table Report
+        # Run Trivy again just to generate a human-readable table report
+        # You could also use 'trivy convert' if you want to convert the SARIF to table,
+        # but running a fresh scan for table output is often simpler.
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          format: 'table'
+          output: 'trivy-report.txt' # Save the table report to a text file
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          ignore-unfixed: true
+          scanners: 'vuln,secret,misconfig'
+          # Important: Skip Trivy setup for this second run to save time
+          skip-setup-trivy: true
+
+      - name: Upload Trivy Reports as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan-reports
+          path: |
+            trivy-results.sarif
+            trivy-report.txt
+          retention-days: 7 # How long to keep the artifacts
